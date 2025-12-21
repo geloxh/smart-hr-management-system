@@ -1,7 +1,7 @@
-### HR Management System
+### Smart HR Management System
 
 ```
-app/
+Smart HR Management System/
 ├── Core/
 │   ├── Tenancy/
 │   ├── Auth/
