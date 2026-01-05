@@ -1,36 +1,57 @@
 ### Smart HR Management System
 
 ```
-Smart HR Management System/
-├── Core/
-│   ├── Tenancy/
-│   ├── Auth/
-│   ├── Billing/
-│   └── Audit/
+smart-hr-management-system/
+├── index.php                          # Entry point & router
+├── composer.json                      # Dependencies
+├── .env                              # Environment config
+├── .htaccess                         # URL rewriting
 │
-├── Modules/
+├── Core/                             # Core system components
+│   ├── Database/
+│   │   └── Connection.php            # Database connection
+│   ├── Repository/
+│   │   └── BaseRepository.php        # Base repository pattern
+│   └── Http/
+│       └── Response.php              # HTTP response helper
+│
+├── Modules/                          # Business modules
 │   ├── Employee/
 │   │   ├── Domain/
-│   │   │   ├── Models/
-│   │   │   ├── ValueObjects/
-│   │   │   └── Events/
-│   │   ├── Application/
-│   │   │   ├── Services/
-│   │   │   └── DTOs/
-│   │   ├── Infrastructure/
-│   │   │   └── Repositories/
-│   │   └── Http/
-│   │       ├── Controllers/
-│   │       └── Requests/
+│   │   │   └── Employee.php          # Employee entity
+│   │   ├── Repository/
+│   │   │   └── EmployeeRepository.php
+│   │   ├── Service/
+│   │   │   └── EmployeeService.php
+│   │   └── Controller/
+│   │       └── EmployeeController.php
 │   │
 │   ├── Attendance/
-│   ├── Leave/
-│   ├── Payroll/
-│   ├── Recruitment/
-│   └── Performance/
+│   │   ├── Domain/
+│   │   │   └── Attendance.php
+│   │   ├── Repository/
+│   │   │   └── AttendanceRepository.php
+│   │   ├── Service/
+│   │   │   └── AttendanceService.php
+│   │   └── Controller/
+│   │       └── AttendanceController.php
+│   │
+│   └── Leave/
+│       ├── Domain/
+│       │   └── Leave.php
+│       ├── Repository/
+│       │   └── LeaveRepository.php
+│       ├── Service/
+│       │   └── LeaveService.php
+│       └── Controller/
+│           └── LeaveController.php
 │
-├── Shared/
-│   ├── Helpers/
-│   ├── Traits/
-│   └── Enums/
+├── database/
+│   └── schema.sql                    # Database schema
+│
+└── public/                           # Frontend assets
+    ├── css/
+    ├── js/
+    └── index.html
+
 ```
