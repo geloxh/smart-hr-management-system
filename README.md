@@ -74,4 +74,3 @@ mysql -u root -p smart_hr_db < database/schema.sql
 <div align="center">
 Made with ❤️ by geloxh
 </div>
-```
