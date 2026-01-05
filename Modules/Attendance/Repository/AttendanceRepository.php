@@ -23,4 +23,23 @@ class AttendanceRepository extends BaseRepository {
         $stmt->execute([$startDate, $endDate]);
         return $stmt->fetchAll();
     }
+
+    public function getEmployeeAttendance(int $employeeId, string $startDate, string $endDate): array {
+        $sql = "SELECT * FROM {$this->table} 
+                WHERE employee_id = ? AND date BETWEEN ? AND ? 
+                ORDER BY date DESC";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$employeeId, $startDate, $endDate]);
+        return $stmt->fetchAll();
+    }
+
+    public function updateCheckOut(int $employeeId, string $date, string $checkOutTime): bool {
+        $stmt = $this->pdo->prepare("UPDATE {$this->table} SET check_out = ? WHERE employee_id = ? AND date = ?");
+        return $stmt->execute([$checkOutTime, $employeeId, $date]);
+    }
+
+    public function getTodayAttendance(int $employeeId): ?array {
+        return $this->findByEmployeeAndDate($employeeId, date('Y-m-d'));
+    }
 }

@@ -1,44 +1,68 @@
 <?php
-namespace Modules\Attendance\Service;
+namespace Modules\Leave\Service;
 
-use Modules\Attendance\Repository\AttendanceRepository;
+use Modules\Leave\Repository\LeaveRepository;
 
-class AttendanceService {
+class LeaveService {
     public function __construct(
-        private AttendanceRepository $repository = new AttendanceRepository()
+        private LeaveRepository $repository = new LeaveRepository()
     ) {}
 
-    public function checkIn(int $employeeId): array {
-        $today = date('Y-m-d');
-        $existing = $this->repository->findByEmployeeAndDate($employeeId, $today);
-        
-        if ($existing) {
-            throw new \Exception('Already checked in today');
+    public function requestLeave(array $data): int {
+        // Validate dates
+        if (strtotime($data['start_date']) > strtotime($data['end_date'])) {
+            throw new \Exception('Start date cannot be after end date');
         }
 
-        $data = [
-            'employee_id' => $employeeId,
-            'date' => $today,
-            'check_in' => date('H:i:s'),
-            'status' => 'present'
+        // Check for overlapping leaves
+        if ($this->hasOverlappingLeave($data['employee_id'], $data['start_date'], $data['end_date'])) {
+            throw new \Exception('You already have a leave request for this period');
+        }
+
+        return $this->repository->create($data);
+    }
+
+    public function getPendingLeaves(): array {
+        return $this->repository->findPending();
+    }
+
+    public function getAllLeaves(): array {
+        return $this->repository->findAll();
+    }
+
+    public function approveLeave(int $id): bool {
+        return $this->repository->updateStatus($id, 'approved');
+    }
+
+    public function rejectLeave(int $id): bool {
+        return $this->repository->updateStatus($id, 'rejected');
+    }
+
+    public function getEmployeeLeaves(int $employeeId): array {
+        return $this->repository->findByEmployee($employeeId);
+    }
+
+    public function getLeaveBalance(int $employeeId): array {
+        $currentYear = date('Y');
+        
+        return [
+            'sick' => 10 - $this->repository->getLeaveBalance($employeeId, 'sick', $currentYear),
+            'vacation' => 20 - $this->repository->getLeaveBalance($employeeId, 'vacation', $currentYear),
+            'personal' => 5 - $this->repository->getLeaveBalance($employeeId, 'personal', $currentYear)
         ];
-
-        $id = $this->repository->create($data);
-        return ['id' => $id, 'check_in_time' => $data['check_in']];
     }
 
-    public function checkOut(int $employeeId): bool {
-        $today = date('Y-m-d');
-        $attendance = $this->repository->findByEmployeeAndDate($employeeId, $today);
+    private function hasOverlappingLeave(int $employeeId, string $startDate, string $endDate): bool {
+        $leaves = $this->repository->findByEmployee($employeeId);
         
-        if (!$attendance) {
-            throw new \Exception('No check-in record found for today');
+        foreach ($leaves as $leave) {
+            if ($leave['status'] === 'rejected') continue;
+            
+            if (($startDate <= $leave['end_date']) && ($endDate >= $leave['start_date'])) {
+                return true;
+            }
         }
-
-        return $this->repository->update($attendance['id'], ['check_out' => date('H:i:s')]);
-    }
-
-    public function getAttendanceReport(string $startDate, string $endDate): array {
-        return $this->repository->getAttendanceReport($startDate, $endDate);
+        
+        return false;
     }
 }
