@@ -1,1 +1,47 @@
- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart HR Management System</title>
+    <link href="css/main.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Smart HR Management System</h1>
+            <nav>
+                <button onclick="showSection('employees')" class="nav-btn active">Employees</button>
+                <button onclick="showSection('attendance')" class="nav-btn">Attendance</button>
+                <button onclick="showSection('leaves')" class="nav-btn">Leaves</button>
+            </nav>
+        </header>
+
+        <main>
+            <section id="employees" class="section active">
+                <h2>Employee Management</h2>
+                <button onclick="showAddEmployeeForm()" class="btn-primary">Add Employee</button>
+                <div id="employee-list"></div>
+            </section>
+
+            <section id="attendance" class="section">
+                <h2>Attendance Tracking</h2>
+                <div class="attendance-controls">
+                    <input type="number" id="employee-id" placeholder="Employee ID">
+                    <button onclick="checkIn()" class="btn-success">Check In</button>
+                    <button onclick="checkOut()" class="btn-warning">Check Out</button>
+                </div>
+                <div id="attendance-report"></div>
+            </section>
+
+            <section id="leaves" class="section">
+                <h2>Leave Management</h2>
+                <button onclick="showLeaveForm()" class="btn-primary">Request Leave</button>
+                <div id="leave-list"></div>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
