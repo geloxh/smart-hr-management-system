@@ -1,32 +1,30 @@
 <?php
 
-require_once __DIR__ . '/../Repository/UserRepository.php';
-require_once __DIR__ . '/../Repository/SessionRepository.php';
-require_once __DIR__ . '/PasswordService.php';
-
-use Modules\Auth\Domain\User;
-use Modules\Auth\Service\PasswordService;
-
 class AuthService {
-    private UserRepository $userRepo;
-    private SessionRepository $sessionRepo;
-    private PasswordService $passwordService;
-
-    public function __construct() {
-        $this->userRepo = new UserRepository();
-        $this->sessionRepo = new SessionRepository();
-        $this->passwordService = new PasswordService();
-    }
+    private int $maxLoginAttempts = 5;
+    private int $lockoutTime = 900; // 15 minutes
 
     public function login(string $username, string $password): ?array {
-        $user = $this->userRepo->findByUsername($username);
-        
-        if (!$user || !$this->passwordService->verify($password, $user->password)) {
+        // Check if account is locked
+        if ($this->isAccountLocked($username)) {
             return null;
         }
 
+        $user = $this->userRepo->findByUsername($username);
+        
+        if (!$user || !$this->passwordService->verify($password, $user->password)) {
+            $this->recordFailedAttempt($username);
+            return null;
+        }
+
+        // Clear failed attempts on successful login
+        $this->clearFailedAttempts($username);
+        
         $token = bin2hex(random_bytes(32));
         $session = $this->sessionRepo->create($user->id, $token);
+
+        // Log successful login
+        $this->logSecurityEvent('login_success', $user->id);
 
         return [
             'user' => $user,
@@ -35,38 +33,31 @@ class AuthService {
         ];
     }
 
-    public function register(array $userData): ?User {
-        if ($this->userRepo->emailExists($userData['email']) || 
-            $this->userRepo->usernameExists($userData['username'])) {
-            return null;
-        }
-
-        $userData['password'] = $this->passwordService->hash($userData['password']);
-        return $this->userRepo->create($userData);
-    }
-
-    public function logout(string $sessionToken): bool {
-        return $this->sessionRepo->deleteByToken($sessionToken);
-    }
-
-    public function validateSession(string $token): ?User {
-        $session = $this->sessionRepo->findByToken($token);
+    private function isAccountLocked(string $username): bool {
+        $attempts = $_SESSION['login_attempts'][$username] ?? [];
+        $recentAttempts = array_filter($attempts, fn($time) => $time > (time() - $this->lockoutTime));
         
-        if (!$session || $session->isExpired()) {
-            return null;
-        }
-
-        return $this->userRepo->findById($session->user_id);
+        return count($recentAttempts) >= $this->maxLoginAttempts;
     }
 
-    public function hasPermission(User $user, string $permission): bool {
-        $permissions = [
-            'admin' => ['*'],
-            'hr' => ['employee.view', 'employee.edit', 'attendance.view', 'leave.approve'],
-            'employee' => ['profile.view', 'profile.edit', 'attendance.own', 'leave.request']
-        ];
+    private function recordFailedAttempt(string $username): void {
+        $_SESSION['login_attempts'][$username][] = time();
+        $this->logSecurityEvent('login_failed', null, ['username' => $username]);
+    }
 
-        $userPermissions = $permissions[$user->role] ?? [];
-        return in_array('*', $userPermissions) || in_array($permission, $userPermissions);
+    private function clearFailedAttempts(string $username): void {
+        unset($_SESSION['login_attempts'][$username]);
+    }
+
+    private function logSecurityEvent(string $event, ?int $userId, array $data = []): void {
+        // Log to database or file
+        error_log(json_encode([
+            'event' => $event,
+            'user_id' => $userId,
+            'ip' => $_SERVER['REMOTE_ADDR'] ?? '',
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
+            'timestamp' => date('Y-m-d H:i:s'),
+            'data' => $data
+        ]));
     }
 }
